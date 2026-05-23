@@ -1,7 +1,7 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
-from app.config import GEMINI_API_KEY
+from config import GEMINI_API_KEY
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-3-flash-preview",
@@ -41,29 +41,30 @@ def reflection_node(state):
     )
 
     prompt = f"""
-You are a research evaluator.
+    You are evaluating research quality.
 
-Analyze the current research summary.
+    SUMMARY:
+    {joined}
 
-SUMMARY:
-{joined}
+    Evaluate the following:
 
-Evaluate:
-- completeness
-- technical depth
-- missing perspectives
-- missing evidence
-- weak areas
+    1. Are there enough factual sources?
+    2. Are multiple perspectives covered?
+    3. Are important counterarguments missing?
+    4. Is technical depth sufficient?
+    5. Are there unsupported claims?
+    6. Are important topics unexplored?
 
-Decide whether more research is needed.
+    If the research is sufficient:
+    RESEARCH_COMPLETE: YES
 
-Return format:
+    Otherwise:
+    RESEARCH_COMPLETE: NO
 
-RESEARCH_COMPLETE: YES or NO
-
-REASON:
-...
-"""
+    Then explain:
+    - what is missing
+    - what should be researched next
+    """
 
     response = llm.invoke([
         HumanMessage(content=prompt)

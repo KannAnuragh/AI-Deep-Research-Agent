@@ -16,23 +16,34 @@ def writer_node(state):
         str(s) for s in summaries
     )
     prompt = f"""
-    Write a professional research report.
+Write a clean markdown research report.
 
-    Findings:
-    {joined}
+Findings:
+{joined}
 
-    Rules:
-    - do not invent facts
-    - avoid unsupported claims
-    - preserve technical accuracy
+IMPORTANT RULES:
+- do not invent facts
+- do not fabricate statistics
+- do not invent dates
+- do not add fictional stakeholders
+- do not use memo formatting
+- avoid unsupported claims
+- preserve technical accuracy
 
-    Structure:
-    - Executive Summary
-    - Main Findings
-    - Trends
-    - Risks
-    - Conclusion
-    """
+ONLY use these sections:
+
+# Title
+
+# Executive Summary
+
+# Main Findings
+
+# Trends
+
+# Risks
+
+# Conclusion
+"""
 
     response = llm.invoke([
         HumanMessage(content=prompt)

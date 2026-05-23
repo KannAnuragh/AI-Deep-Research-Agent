@@ -38,6 +38,11 @@ def search_node(state):
 
             all_results.append(formatted)
 
+    existing = state.get("search_results", [])
+
+    combined = (existing + all_results)[-40:]
+
     return {
-        "search_results": all_results
+        "search_results": combined,
+        "iteration_count": state.get("iteration_count", 0) + 1
     }

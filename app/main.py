@@ -4,12 +4,10 @@ if __name__ == "__main__":
 
     query = input("Enter research topic: ")
 
-    result = graph.invoke(
-        {
-            "user_query": query
-        },
-        debug=True
-    )
+    result = graph.invoke({
+        "user_query": query,
+        "iteration_count": 0
+    })
 
     print("\nFINAL REPORT:\n")
 

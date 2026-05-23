@@ -86,6 +86,8 @@ CONTENT:
 
     summary_text = _response_text(response.content)
 
+    existing = state.get("summaries", [])
+
     return {
-        "summaries": [summary_text]
+        "summaries": existing + [summary_text]
     }
