@@ -3,43 +3,76 @@ import re
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
+from config import GEMINI_API_KEY
+
 llm = ChatGoogleGenerativeAI(
-    model="gemini-3-flash-preview"
+    model="gemini-3-flash-preview",
+    api_key=GEMINI_API_KEY
 )
+
+def _response_text(content):
+
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+
+        parts = []
+
+        for item in content:
+
+            if isinstance(item, dict):
+                parts.append(item.get("text", ""))
+
+            elif hasattr(item, "text"):
+                parts.append(item.text)
+
+            else:
+                parts.append(str(item))
+
+        return "\n".join(parts)
+
+    return str(content)
 
 def planner_node(state):
 
     user_query = state["user_query"]
 
     prompt = f"""
-    You are a research planner.
+Generate exactly 5 web search queries.
 
-    Generate 5 high-quality search queries.
+TOPIC:
+{user_query}
 
-    Topic:
-    {user_query}
-
-    Cover:
-    - fundamentals
-    - applications
-    - trends
-    - comparisons
-    - modern developments
-    """
+RULES:
+- Return ONLY search queries
+- One query per line
+- No explanations
+- No markdown
+- No numbering
+- No headings
+- No bullet points
+- No descriptions
+"""
 
     response = llm.invoke([
         HumanMessage(content=prompt)
     ])
 
-    queries = response.content.splitlines()
+    text = _response_text(response.content)
 
-    cleaned = [
-        re.sub(r"^\d+\.\s*", "", q)
-        .strip()
-        for q in queries
-        if q.strip()
-    ]
+    queries = text.splitlines()
+
+    cleaned = []
+
+    for q in queries:
+
+        q = re.sub(r"^\d+\.\s*", "", q)
+        q = q.replace('"', "").strip()
+
+        if len(q) > 10:
+            cleaned.append(q)
 
     return {
-        "search_queries": cleaned
+        "search_queries": cleaned[:5]
     }

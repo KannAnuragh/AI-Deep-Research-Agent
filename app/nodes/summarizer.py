@@ -1,66 +1,91 @@
-from config import GEMINI_API_KEY  # noqa: F401
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
-llm = ChatGoogleGenerativeAI(model="gemini-3-flash-preview")
+from config import GEMINI_API_KEY
 
+llm = ChatGoogleGenerativeAI(
+    model="gemini-3-flash-preview",
+    api_key=GEMINI_API_KEY
+)
 
 def _response_text(content):
+
     if isinstance(content, str):
         return content
 
     if isinstance(content, list):
-        return "\n".join(
-            item.get("text", "")
-            for item in content
-            if isinstance(item, dict)
-        )
+
+        parts = []
+
+        for item in content:
+
+            if isinstance(item, dict):
+                parts.append(item.get("text", ""))
+
+            elif hasattr(item, "text"):
+                parts.append(item.text)
+
+            else:
+                parts.append(str(item))
+
+        return "\n".join(parts)
 
     return str(content)
 
-def summarize_results(query, results):
+def summarize_node(state):
 
-    content += f"""
+    results = state["search_results"]
 
-    ========================
-    SOURCE
-    ========================
+    content = ""
 
-    TITLE:
-    {r.get('title')}
+    for r in results:
 
-    URL:
-    {r.get('url')}
+        content += f"""
 
-    CONTENT:
-    {r.get('content')}
+========================
+SOURCE
+========================
 
-    """
+TITLE:
+{r.get("title")}
+
+URL:
+{r.get("url")}
+
+CONTENT:
+{r.get("content")}
+
+"""
 
     prompt = f"""
-    You are a research analyst.
+    Analyze and summarize the following research findings.
 
-    Research Question:
-    {query}
-
-    Analyze and summarize.
-
-    For every major claim:
-    - mention the source title
-    - preserve important URLs
+    RESEARCH DATA:
+    {content}
 
     Focus on:
-    - key findings
-    - statistics
+    - important insights
     - trends
-    - insights
+    - major claims
+    - psychological theories
+    - neuroscience aspects
+    - evolutionary explanations
 
-    Information:
-    {content}
+    Rules:
+    - only use provided research data
+    - do not invent claims
+    - preserve technical accuracy
+    - synthesize overlapping findings
+
+    Write a concise but detailed research summary.
     """
 
     response = llm.invoke([
         HumanMessage(content=prompt)
     ])
 
-    return _response_text(response.content)
+    summary_text = _response_text(response.content)
+
+    return {
+        "summaries": [summary_text]
+    }

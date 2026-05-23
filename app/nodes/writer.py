@@ -1,11 +1,49 @@
-from config import GEMINI_API_KEY  # noqa: F401
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
-llm = ChatGoogleGenerativeAI(model="gemini-3-flash-preview")
+from config import GEMINI_API_KEY
 
+llm = ChatGoogleGenerativeAI(
+    model="gemini-3-flash-preview",
+    api_key=GEMINI_API_KEY
+)
+
+def writer_node(state):
+
+    summaries = state["summaries"]
+
+    joined = "\n\n".join(
+        str(s) for s in summaries
+    )
+    prompt = f"""
+    Write a professional research report.
+
+    Findings:
+    {joined}
+
+    Rules:
+    - do not invent facts
+    - avoid unsupported claims
+    - preserve technical accuracy
+
+    Structure:
+    - Executive Summary
+    - Main Findings
+    - Trends
+    - Risks
+    - Conclusion
+    """
+
+    response = llm.invoke([
+        HumanMessage(content=prompt)
+    ])
+
+    return {
+        "final_report": _response_text(response.content)
+    }
 
 def _response_text(content):
+
     if isinstance(content, str):
         return content
 
@@ -17,39 +55,3 @@ def _response_text(content):
         )
 
     return str(content)
-
-def generate_report(user_query, summaries):
-
-    joined = "\n\n".join(summaries)
-
-    prompt = f"""
-    Write a professional research report.
-
-    Research Topic:
-    {user_query}
-
-    Findings:
-    {joined}
-
-    IMPORTANT RULES:
-    - Do not invent statistics
-    - Do not fabricate predictions
-    - Only use information from findings
-    - Clearly state uncertainty
-    - Avoid unsupported claims
-
-    Structure:
-    - Executive Summary
-    - Main Findings
-    - Key Trends
-    - Risks
-    - Conclusion
-
-    Use markdown formatting.
-    """
-
-    response = llm.invoke([
-        HumanMessage(content=prompt)
-    ])
-
-    return _response_text(response.content)
