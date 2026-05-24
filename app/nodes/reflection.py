@@ -1,12 +1,6 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
-from config import GEMINI_API_KEY
-
-llm = ChatGoogleGenerativeAI(
-    model="gemini-3-flash-preview",
-    google_api_key=GEMINI_API_KEY
-)
+from app.llm import research_llm
 
 def _response_text(content):
 
@@ -66,7 +60,7 @@ def reflection_node(state):
     - what should be researched next
     """
 
-    response = llm.invoke([
+    response = research_llm.invoke([
         HumanMessage(content=prompt)
     ])
 

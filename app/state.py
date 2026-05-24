@@ -1,19 +1,27 @@
-from typing import TypedDict, List
+from typing import TypedDict, List, Dict
 
 class SearchResult(TypedDict):
     title: str
     content: str
     url: str
 
+class Section(TypedDict):
+    name: str
+    description: str
+
 class ResearchState(TypedDict):
 
     user_query: str
+
+    sections: List[Section]
+
+    current_section: str
 
     search_queries: List[str]
 
     search_results: List[SearchResult]
 
-    summaries: List[str]
+    summaries: Dict[str, str]
 
     reflection: str
 

@@ -1,38 +1,54 @@
 from langgraph.graph import StateGraph, START, END
 
-from state import ResearchState
+from app.state import ResearchState
 
-from nodes.planner import planner_node
-from nodes.search import search_node
-from nodes.summarizer import summarize_node
-from nodes.reflection import reflection_node
-from nodes.writer import writer_node
+from app.nodes.supervisor import supervisor_node
+from app.nodes.section_selector import section_selector_node
+from app.nodes.worker import worker_node
+from app.nodes.summarizer import summarize_node
+from app.nodes.writer import writer_node
 
 builder = StateGraph(ResearchState)
 
-builder.add_node("planner", planner_node)
-builder.add_node("search", search_node)
+# Nodes
+builder.add_node("supervisor", supervisor_node)
+builder.add_node("section_selector", section_selector_node)
+builder.add_node("worker", worker_node)
 builder.add_node("summarize", summarize_node)
-builder.add_node("reflection", reflection_node)
 builder.add_node("writer", writer_node)
 
-builder.add_edge(START, "planner")
-builder.add_edge("planner", "search")
-builder.add_edge("search", "summarize")
-builder.add_edge("summarize", "reflection")
+# Flow
+builder.add_edge(START, "supervisor")
+
+builder.add_edge(
+    "supervisor",
+    "section_selector"
+)
+
+builder.add_edge(
+    "section_selector",
+    "worker"
+)
+
+builder.add_edge(
+    "worker",
+    "summarize"
+)
 
 def should_continue(state):
 
-    if state["research_complete"]:
+    sections = state["sections"]
+
+    summaries = state.get("summaries", {})
+
+    # All sections completed
+    if len(summaries) >= len(sections):
         return "writer"
 
-    if state["iteration_count"] >= 3:
-        return "writer"
-
-    return "search"
+    return "section_selector"
 
 builder.add_conditional_edges(
-    "reflection",
+    "summarize",
     should_continue
 )
 

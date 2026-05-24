@@ -1,12 +1,6 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
-from config import GEMINI_API_KEY
-
-llm = ChatGoogleGenerativeAI(
-    model="gemini-3-flash-preview",
-    api_key=GEMINI_API_KEY
-)
+from app.llm import research_llm
 
 def _response_text(content):
 
@@ -80,7 +74,7 @@ CONTENT:
     Write a concise but detailed research summary.
     """
 
-    response = llm.invoke([
+    response = research_llm.invoke([
         HumanMessage(content=prompt)
     ])
 
@@ -88,6 +82,12 @@ CONTENT:
 
     existing = state.get("summaries", [])
 
+    section = state["current_section"]
+
+    existing = state.get("summaries", {})
+
+    existing[section] = summary_text
+
     return {
-        "summaries": existing + [summary_text]
+        "summaries": existing
     }

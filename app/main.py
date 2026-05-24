@@ -1,4 +1,4 @@
-from graph import graph
+from app.graph import graph
 
 if __name__ == "__main__":
 

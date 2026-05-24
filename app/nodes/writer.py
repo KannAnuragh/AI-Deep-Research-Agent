@@ -1,20 +1,24 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
-from config import GEMINI_API_KEY
-
-llm = ChatGoogleGenerativeAI(
-    model="gemini-3-flash-preview",
-    api_key=GEMINI_API_KEY
-)
+from app.llm import research_llm
 
 def writer_node(state):
 
     summaries = state["summaries"]
 
-    joined = "\n\n".join(
-        str(s) for s in summaries
-    )
+    joined = ""
+
+    for section, summary in summaries.items():
+
+        joined += f"""
+
+    # SECTION
+    {section}
+
+    {summary}
+
+    """
+
     prompt = f"""
 Write a clean markdown research report.
 
@@ -45,7 +49,7 @@ ONLY use these sections:
 # Conclusion
 """
 
-    response = llm.invoke([
+    response = research_llm.invoke([
         HumanMessage(content=prompt)
     ])
 
