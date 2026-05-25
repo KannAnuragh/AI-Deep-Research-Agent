@@ -1,72 +1,36 @@
-import re
-
-from langchain_core.messages import HumanMessage
-
 from app.llm import research_llm
+from app.schemas import PlannerOutput
+from app.prompts import PLANNER_PROMPT
 
-def _response_text(content):
-
-    if isinstance(content, str):
-        return content
-
-    if isinstance(content, list):
-
-        parts = []
-
-        for item in content:
-
-            if isinstance(item, dict):
-                parts.append(item.get("text", ""))
-
-            elif hasattr(item, "text"):
-                parts.append(item.text)
-
-            else:
-                parts.append(str(item))
-
-        return "\n".join(parts)
-
-    return str(content)
 
 def planner_node(state):
 
     user_query = state["user_query"]
+    current_section = state.get("current_section", "")
+    sections = state.get("sections", [])
 
-    prompt = f"""
-Generate exactly 5 web search queries.
+    # Find description for the current section
+    description = ""
+    for s in sections:
+        if s["name"] == current_section:
+            description = s.get("description", "")
+            break
 
-TOPIC:
-{user_query}
+    prompt = PLANNER_PROMPT.format(
+        query=user_query,
+        section=current_section,
+        description=description
+    )
 
-RULES:
-- Return ONLY search queries
-- One query per line
-- No explanations
-- No markdown
-- No numbering
-- No headings
-- No bullet points
-- No descriptions
-"""
+    response = research_llm.invoke_structured(
+        PlannerOutput,
+        prompt
+    )
 
-    response = research_llm.invoke([
-        HumanMessage(content=prompt)
-    ])
-
-    text = _response_text(response.content)
-
-    queries = text.splitlines()
-
-    cleaned = []
-
-    for q in queries:
-
-        q = re.sub(r"^\d+\.\s*", "", q)
-        q = q.replace('"', "").strip()
-
-        if len(q) > 10:
-            cleaned.append(q)
+    print(f"\nPLANNER QUERIES FOR: {current_section}\n")
+    for q in response.queries:
+        print("-", q)
 
     return {
-        "search_queries": cleaned[:5]
+        "search_queries": response.queries
     }

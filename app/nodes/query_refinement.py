@@ -1,83 +1,27 @@
-import re
-
-from langchain_core.messages import HumanMessage
-
 from app.llm import research_llm
+from app.schemas import QueryRefinementOutput
+from app.prompts import QUERY_REFINEMENT_PROMPT
 
-def _response_text(content):
-
-    if isinstance(content, str):
-        return content
-
-    if isinstance(content, list):
-
-        parts = []
-
-        for item in content:
-
-            if isinstance(item, dict):
-                parts.append(item.get("text", ""))
-
-            elif hasattr(item, "text"):
-                parts.append(item.text)
-
-            else:
-                parts.append(str(item))
-
-        return "\n".join(parts)
-
-    return str(content)
 
 def query_refinement_node(state):
 
     reflection = state["reflection"]
+    section = state.get("current_section", "")
 
-    previous_queries = state["search_queries"]
+    prompt = QUERY_REFINEMENT_PROMPT.format(
+        section=section,
+        reflection=reflection
+    )
 
-    joined_queries = "\n".join(previous_queries)
+    response = research_llm.invoke_structured(
+        QueryRefinementOutput,
+        prompt
+    )
 
-    prompt = f"""
-You are a research strategist.
-
-The current research process identified missing areas.
-
-REFLECTION:
-{reflection}
-
-PREVIOUS SEARCH QUERIES:
-{joined_queries}
-
-Generate 5 NEW search queries that:
-- explore missing perspectives
-- avoid repeating previous searches
-- deepen technical coverage
-- investigate unexplored aspects
-
-RULES:
-- return ONLY queries
-- one query per line
-- no numbering
-- no markdown
-"""
-
-    response = research_llm.invoke([
-        HumanMessage(content=prompt)
-    ])
-
-    text = _response_text(response.content)
-
-    queries = text.splitlines()
-
-    cleaned = []
-
-    for q in queries:
-
-        q = re.sub(r"^\d+\.\s*", "", q)
-        q = q.replace('"', "").strip()
-
-        if len(q) > 10:
-            cleaned.append(q)
+    print(f"\nREFINED QUERIES FOR: {section}\n")
+    for q in response.refined_queries:
+        print("-", q)
 
     return {
-        "search_queries": cleaned[:5]
+        "search_queries": response.refined_queries
     }

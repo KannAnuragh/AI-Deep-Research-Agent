@@ -1,6 +1,8 @@
 from langchain_core.messages import HumanMessage
 
 from app.llm import research_llm
+from app.prompts import SUMMARIZER_PROMPT
+
 
 def _response_text(content):
 
@@ -26,16 +28,16 @@ def _response_text(content):
 
     return str(content)
 
+
 def summarize_node(state):
 
     results = state["search_results"]
+    section = state["current_section"]
 
     content = ""
 
     for r in results:
-
         content += f"""
-
 ========================
 SOURCE
 ========================
@@ -51,28 +53,10 @@ CONTENT:
 
 """
 
-    prompt = f"""
-    Analyze and summarize the following research findings.
-
-    RESEARCH DATA:
-    {content}
-
-    Focus on:
-    - important insights
-    - trends
-    - major claims
-    - psychological theories
-    - neuroscience aspects
-    - evolutionary explanations
-
-    Rules:
-    - only use provided research data
-    - do not invent claims
-    - preserve technical accuracy
-    - synthesize overlapping findings
-
-    Write a concise but detailed research summary.
-    """
+    prompt = SUMMARIZER_PROMPT.format(
+        section=section,
+        content=content
+    )
 
     response = research_llm.invoke([
         HumanMessage(content=prompt)
@@ -80,13 +64,10 @@ CONTENT:
 
     summary_text = _response_text(response.content)
 
-    existing = state.get("summaries", [])
-
-    section = state["current_section"]
-
     existing = state.get("summaries", {})
-
     existing[section] = summary_text
+
+    print(f"\nSUMMARIZED SECTION: {section}\n")
 
     return {
         "summaries": existing

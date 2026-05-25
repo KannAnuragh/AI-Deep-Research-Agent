@@ -20,10 +20,12 @@ def section_selector_node(state):
             print(f"\nCURRENT SECTION: {name}")
 
             return {
-                "current_section": name
+                "current_section": name,
+                "iteration_count": 0 
             }
 
     # fallback
     return {
-        "current_section": sections[0]["name"]
+        "current_section": sections[0]["name"],
+        "iteration_count": 0 
     }

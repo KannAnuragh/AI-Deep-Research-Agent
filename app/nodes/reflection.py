@@ -1,74 +1,40 @@
-from langchain_core.messages import HumanMessage
-
 from app.llm import research_llm
+from app.schemas import ReflectionOutput
+from app.prompts import REFLECTION_PROMPT
 
-def _response_text(content):
-
-    if isinstance(content, str):
-        return content
-
-    if isinstance(content, list):
-
-        parts = []
-
-        for item in content:
-
-            if isinstance(item, dict):
-                parts.append(item.get("text", ""))
-
-            elif hasattr(item, "text"):
-                parts.append(item.text)
-
-            else:
-                parts.append(str(item))
-
-        return "\n".join(parts)
-
-    return str(content)
 
 def reflection_node(state):
 
-    summaries = state["summaries"]
+    section = state["current_section"]
+    sections = state.get("sections", [])
+    summaries = state.get("summaries", {})
 
-    joined = "\n\n".join(
-        str(s) for s in summaries
+    # Get description for current section
+    description = ""
+    for s in sections:
+        if s["name"] == section:
+            description = s.get("description", "")
+            break
+
+    # Only evaluate the current section's summary
+    current_summary = summaries.get(section, "")
+
+    prompt = REFLECTION_PROMPT.format(
+        section=section,
+        description=description,
+        summary=current_summary
     )
 
-    prompt = f"""
-    You are evaluating research quality.
+    response = research_llm.invoke_structured(
+        ReflectionOutput,
+        prompt
+    )
 
-    SUMMARY:
-    {joined}
-
-    Evaluate the following:
-
-    1. Are there enough factual sources?
-    2. Are multiple perspectives covered?
-    3. Are important counterarguments missing?
-    4. Is technical depth sufficient?
-    5. Are there unsupported claims?
-    6. Are important topics unexplored?
-
-    If the research is sufficient:
-    RESEARCH_COMPLETE: YES
-
-    Otherwise:
-    RESEARCH_COMPLETE: NO
-
-    Then explain:
-    - what is missing
-    - what should be researched next
-    """
-
-    response = research_llm.invoke([
-        HumanMessage(content=prompt)
-    ])
-
-    reflection = _response_text(response.content)
-
-    complete = "RESEARCH_COMPLETE: YES" in reflection
+    print(f"\nREFLECTION FOR: {section}")
+    print(f"COMPLETE: {response.research_complete}")
+    print(f"REASONING: {response.reasoning}\n")
 
     return {
-        "reflection": reflection,
-        "research_complete": complete
+        "reflection": response.reasoning,
+        "research_complete": response.research_complete
     }

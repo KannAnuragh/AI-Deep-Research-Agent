@@ -1,61 +1,8 @@
 from langchain_core.messages import HumanMessage
 
 from app.llm import research_llm
+from app.prompts import WRITER_PROMPT
 
-def writer_node(state):
-
-    summaries = state["summaries"]
-
-    joined = ""
-
-    for section, summary in summaries.items():
-
-        joined += f"""
-
-    # SECTION
-    {section}
-
-    {summary}
-
-    """
-
-    prompt = f"""
-Write a clean markdown research report.
-
-Findings:
-{joined}
-
-IMPORTANT RULES:
-- do not invent facts
-- do not fabricate statistics
-- do not invent dates
-- do not add fictional stakeholders
-- do not use memo formatting
-- avoid unsupported claims
-- preserve technical accuracy
-
-ONLY use these sections:
-
-# Title
-
-# Executive Summary
-
-# Main Findings
-
-# Trends
-
-# Risks
-
-# Conclusion
-"""
-
-    response = research_llm.invoke([
-        HumanMessage(content=prompt)
-    ])
-
-    return {
-        "final_report": _response_text(response.content)
-    }
 
 def _response_text(content):
 
@@ -70,3 +17,30 @@ def _response_text(content):
         )
 
     return str(content)
+
+
+def writer_node(state):
+
+    summaries = state["summaries"]
+
+    joined = ""
+
+    for section, summary in summaries.items():
+        joined += f"""
+# SECTION: {section}
+
+{summary}
+
+"""
+
+    prompt = WRITER_PROMPT.format(joined=joined)
+
+    response = research_llm.invoke([
+        HumanMessage(content=prompt)
+    ])
+
+    print("\nWRITER: FINAL REPORT GENERATED\n")
+
+    return {
+        "final_report": _response_text(response.content)
+    }
