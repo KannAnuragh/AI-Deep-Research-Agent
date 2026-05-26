@@ -1,8 +1,15 @@
 SUPERVISOR_PROMPT = """
-Break this research topic into exactly 3 major technical sections.
+Break this research topic into exactly 3 specific technical sections.
 
 TOPIC:
 {query}
+
+RULES:
+- Each section must be a distinct technical dimension (e.g. hardware architecture, control algorithms, performance analysis)
+- Section names must be concise noun phrases, NOT "Introduction to..." or "Testing of..."
+- Bad examples: "Introduction to X", "Overview of Y", "Testing and Validation of Z"
+- Good examples: "FPGA Hardware Architecture and Resource Utilization", "PWM Modulation Algorithms and THD Optimization", "Gate Drive and Power Stage Design"
+- Each section must be independently researchable
 """
 
 PLANNER_PROMPT = """
@@ -22,6 +29,7 @@ The queries must be specific to this section, not the overall topic.
 
 SUMMARIZER_PROMPT = """
 Analyze and summarize the following research findings for the section below.
+For every important claim, mention the supporting source URL.
 
 SECTION:
 {section}

@@ -32,9 +32,9 @@ builder.add_node("writer", writer_node)
 
 builder.add_edge(START, "supervisor")
 builder.add_edge("supervisor", "section_selector")
-builder.add_edge("section_selector", "planner")   # planner now in the loop
+builder.add_edge("section_selector", "planner")
 builder.add_edge("planner", "worker")
-builder.add_edge("worker", "summarize")
+builder.add_edge("worker", "summarize")       # compressor removed — worker already truncates to 1500 chars
 builder.add_edge("summarize", "reflection")
 
 # =========================
@@ -56,7 +56,6 @@ def should_continue(state):
 
     if state.get("research_complete", False):
 
-        # Current section is done — check if more sections remain
         unsummarised = [
             s for s in sections
             if s["name"] not in summaries

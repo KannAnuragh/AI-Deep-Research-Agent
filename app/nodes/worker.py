@@ -1,27 +1,48 @@
 from ddgs import DDGS
 
+from app.tools.web_extract import (
+    extract_webpage
+)
+
 
 def worker_node(state):
 
-    queries = state.get("search_queries", [])
-    section = state.get("current_section", "")
+    queries = state.get(
+        "search_queries",
+        []
+    )
 
-    # Fallback: search the section name if no queries were planned
+    section = state.get(
+        "current_section",
+        ""
+    )
+
+    # Fallback
     if not queries:
         queries = [section]
 
     all_results = []
+
     seen_urls = set()
 
     for query in queries:
 
+        print(f"\nSEARCHING: {query}\n")
+
         try:
+
             results = DDGS().text(
                 query,
-                max_results=5
+                max_results=2
             )
+
         except Exception as e:
-            print(f"Search failed for '{query}': {e}")
+
+            print(
+                f"Search failed "
+                f"for '{query}': {e}"
+            )
+
             continue
 
         if not results:
@@ -39,22 +60,69 @@ def worker_node(state):
 
             seen_urls.add(url)
 
+            print(
+                f"EXTRACTING: {url}"
+            )
+
+            try:
+
+                content = extract_webpage(
+                    url
+                )
+
+            except Exception as e:
+
+                print(
+                    f"Extraction failed: {e}"
+                )
+
+                continue
+
+            # fallback to snippet
+            if not content:
+
+                content = r.get(
+                    "body",
+                    ""
+                )
+
+            if not content:
+                continue
+
             all_results.append({
-                "title": r.get("title"),
-                "content": r.get("body"),
+
+                "title": r.get(
+                    "title",
+                    ""
+                ),
+
+                "content": content[:1500],
+
                 "url": url
             })
 
-    # Accumulate results across iterations, keep latest 40
-    existing = state.get("search_results", [])
-    combined = (existing + all_results)[-40:]
+    # Preserve rolling memory
+    existing = state.get(
+        "search_results",
+        []
+    )
+
+    combined = (existing + all_results)[-10:]
 
     print(
-        f"\nWORKER: {len(all_results)} new results "
-        f"({len(combined)} total) for '{section}'\n"
+        f"\nWORKER:"
+        f" {len(all_results)} new results "
+        f"({len(combined)} total)"
+        f" for '{section}'\n"
     )
 
     return {
+
         "search_results": combined,
-        "iteration_count": state.get("iteration_count", 0) + 1
+
+        "iteration_count":
+            state.get(
+                "iteration_count",
+                0
+            ) + 1
     }

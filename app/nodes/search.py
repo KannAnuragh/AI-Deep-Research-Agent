@@ -40,7 +40,7 @@ def search_node(state):
 
     existing = state.get("search_results", [])
 
-    combined = (existing + all_results)[-40:]
+    combined = (existing + all_results)[-10:]
 
     return {
         "search_results": combined,
