@@ -2,27 +2,31 @@ from app.llm import research_llm
 from app.schemas import ReflectionOutput
 from app.prompts import REFLECTION_PROMPT
 
+# Minimum quantitative score to pass reflection
+QUANTITATIVE_THRESHOLD = 3
+
 
 def reflection_node(state):
 
     section = state["current_section"]
     sections = state.get("sections", [])
     summaries = state.get("summaries", {})
+    adversarial_feedback = state.get("adversarial_feedback", "")
 
-    # Get description for current section
+    # Find section description
     description = ""
     for s in sections:
         if s["name"] == section:
             description = s.get("description", "")
             break
 
-    # Only evaluate the current section's summary
     current_summary = summaries.get(section, "")
 
     prompt = REFLECTION_PROMPT.format(
         section=section,
         description=description,
-        summary=current_summary
+        summary=current_summary,
+        adversarial_feedback=adversarial_feedback
     )
 
     response = research_llm.invoke_structured(
@@ -31,10 +35,33 @@ def reflection_node(state):
     )
 
     print(f"\nREFLECTION FOR: {section}")
-    print(f"COMPLETE: {response.research_complete}")
-    print(f"REASONING: {response.reasoning}\n")
+    print(f"  LLM COMPLETE:       {response.research_complete}")
+    print(f"  QUANTITATIVE SCORE: {response.quantitative_score}/5")
+    print(f"  SUFFICIENT DEPTH:   {response.has_sufficient_depth}")
+    print(f"  REASONING: {response.reasoning}\n")
+
+    # Priority 1 — hard gate: insufficient quantitative evidence → force re-research
+    if response.quantitative_score < QUANTITATIVE_THRESHOLD:
+        print(
+            f"  GATE FAILED: quantitative_score "
+            f"{response.quantitative_score} < {QUANTITATIVE_THRESHOLD} "
+            f"— forcing re-research\n"
+        )
+        research_complete = False
+
+    # Priority 2 — hard gate: missing technical depth subcategories
+    elif not response.has_sufficient_depth:
+        print(
+            "  GATE FAILED: technical depth subcategories incomplete "
+            "— forcing re-research\n"
+        )
+        research_complete = False
+
+    else:
+        research_complete = response.research_complete
 
     return {
         "reflection": response.reasoning,
-        "research_complete": response.research_complete
+        "missing_topics": response.missing_topics,
+        "research_complete": research_complete,
     }

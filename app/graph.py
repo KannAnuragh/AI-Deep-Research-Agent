@@ -7,6 +7,7 @@ from app.nodes.section_selector import section_selector_node
 from app.nodes.planner import planner_node
 from app.nodes.worker import worker_node
 from app.nodes.summarizer import summarize_node
+from app.nodes.adversarial import adversarial_node
 from app.nodes.reflection import reflection_node
 from app.nodes.query_refinement import query_refinement_node
 from app.nodes.writer import writer_node
@@ -22,6 +23,7 @@ builder.add_node("section_selector", section_selector_node)
 builder.add_node("planner", planner_node)
 builder.add_node("worker", worker_node)
 builder.add_node("summarize", summarize_node)
+builder.add_node("adversarial", adversarial_node)  # Priority 4
 builder.add_node("reflection", reflection_node)
 builder.add_node("query_refinement", query_refinement_node)
 builder.add_node("writer", writer_node)
@@ -34,8 +36,9 @@ builder.add_edge(START, "supervisor")
 builder.add_edge("supervisor", "section_selector")
 builder.add_edge("section_selector", "planner")
 builder.add_edge("planner", "worker")
-builder.add_edge("worker", "summarize")       # compressor removed — worker already truncates to 1500 chars
-builder.add_edge("summarize", "reflection")
+builder.add_edge("worker", "summarize")
+builder.add_edge("summarize", "adversarial")   # adversarial challenges before reflection
+builder.add_edge("adversarial", "reflection")  # reflection reads adversarial_feedback
 
 # =========================
 # CONDITIONAL ROUTING
@@ -51,7 +54,7 @@ def should_continue(state):
 
     # HARD STOP — write whatever we have
     if iteration_count >= 3:
-        print("\nMAX ITERATIONS REACHED\n")
+        print("\nMAX ITERATIONS REACHED — proceeding to writer\n")
         return "writer"
 
     if state.get("research_complete", False):

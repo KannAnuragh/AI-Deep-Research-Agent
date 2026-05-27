@@ -2,6 +2,7 @@ from langchain_core.messages import HumanMessage
 
 from app.llm import research_llm
 from app.prompts import SUMMARIZER_PROMPT
+from app.utils.credibility import format_source_block
 
 
 def _response_text(content):
@@ -10,20 +11,14 @@ def _response_text(content):
         return content
 
     if isinstance(content, list):
-
         parts = []
-
         for item in content:
-
             if isinstance(item, dict):
                 parts.append(item.get("text", ""))
-
             elif hasattr(item, "text"):
                 parts.append(item.text)
-
             else:
                 parts.append(str(item))
-
         return "\n".join(parts)
 
     return str(content)
@@ -34,22 +29,14 @@ def summarize_node(state):
     results = state["search_results"]
     section = state["current_section"]
 
+    # Build source block with credibility labels visible to the LLM
     content = ""
-
     for r in results:
         content += f"""
 ========================
 SOURCE
 ========================
-
-TITLE:
-{r.get("title")}
-
-URL:
-{r.get("url")}
-
-CONTENT:
-{r.get("content")}
+{format_source_block(r)}
 
 """
 
